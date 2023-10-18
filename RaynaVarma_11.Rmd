@@ -1,0 +1,151 @@
+---
+title: "RaynaVarma_DC11"
+output: html_document
+date: "2023-10-10"
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#__________________________________________________________________________
+
+11.2 -> Consider these two tables containing demographic and geographic information about countries.
+Answer: the two tables cannot be successfully combined because the datasets have different variable names for the country name. One dataset has the countries under the country variable while the other dataset has the countries under the name variable. 
+
+
+11.3.3 -> Call a ZIP code “crowded” when the population is over 50,000. Make a scatter plot showing the geographic location of the crowded ZIPs.
+```{r}
+Crowded <-
+  ZipGeography %>%
+  filter(Population > 50000, na.rm = TRUE) %>%
+  select(Population, ZIP, Latitude, Longitude)
+
+gf_point(Latitude ~ Longitude, data = Crowded) %>% 
+  gf_labs(title = "", caption = "")
+```
+
+11.3.4 -> Make a choropleth map of the US showing, for each state, one of the following (your choice). Hint: you’ll have to sum over all the ZIP codes in a state before you can meaningfully find the fraction.
+
+ii.
+```{r}
+ZipsOver65 <-
+  ZipDemography %>%
+  select(X65yearsandover, ZIP, Totalpopulation) %>%
+  mutate(totalPop = sum(Totalpopulation, na.rm = TRUE))
+  
+Over65 <-
+  ZipsOver65 %>%
+  select(ZIP, Totalpopulation) %>%
+  inner_join(ZipGeography) %>%
+  select(ZIP, State, Totalpopulation)
+
+```
+
+11.3.5 -> Pick out the 10,000 zip codes with the highest population. Make a scatter plot of the latitude versus longitude. (Hints: arrange() and head().) Use color to represent the fraction of the population that is over 65.
+
+```{r}
+HighZIP <-
+  ZipGeography %>%
+  select(ZIP, Population, Latitude, Longitude) %>%
+  arrange(desc(Population)) %>%
+  head(10000)
+
+HighZIP65 <-
+  ZipDemography %>%
+  select(X65yearsandover, ZIP)
+
+High65 <-
+  HighZIP %>%
+  inner_join(HighZIP65) %>%
+  mutate(Over65 = X65yearsandover/sum(Population))
+
+ggplot(data = High65, aes(x = Latitude, y = Longitude)) + geom_point()  + aes(colour = X65yearsandover) + theme(legend.position = "right") + labs(title = "")
+```
+
+11.5 -> Using the ZipGeography data table (from dcData), answer the following questions. In addition to the answer itself, show the statement that you used and the data table created by your statement that contains the answer.
+
+11.5.1 -> How many different counties are there?
+Answer: 1910
+
+```{r}
+counties <-
+  ZipGeography %>%
+  select(County)%>%
+  summarise(count = n_distinct(County))
+
+
+```
+
+
+11.5.2 -> Which city names are used in the most states?
+Answer: Washington
+
+```{r}
+StateFreqByCity <-
+  distinct(ZipGeography) %>%
+  select(CityName, State) %>%
+  summarise(CityName, State) %>%
+  count = (CityName %in% c((State))) %>%
+  mutate(numStates = count)
+
+
+```
+
+
+11.5.3 -> Identify cities that include more than 5% of their state population; which of those city names are used in the most states?
+Answer: Salem
+
+```{r}
+StatePop <-
+  ZipGeography %>%
+  select(State, Population) %>%
+  mutate(totalPopu = sum(Population, na.rm = TRUE))
+
+TopCity <-
+  ZipGeography %>%
+  select(Population, CityName) %>%
+  mutate(cityPop = sum(Population, na.rm = TRUE))
+
+TopCity2 <-
+  TopCity %>%
+  inner_join(StatePop) %>%
+  filter(cityPop > 0.05*Population)
+  
+
+
+```
+
+
+
+11.5.4 -> Does any state have more than one time zone?
+Answer: Yes, Florida, Oregon, Kentucky, Arizona, Texas, Tennessee, North Dakota, Michigan, Alaska, South Dakota, Nevada, Kansas, Nebraska, Idaho, and Indiana
+
+```{r}
+TimeZone2 <-
+  ZipGeography %>%
+  select(State, Timezone) %>%
+  mutate(count = sum(Timezone %in% c(State)))
+
+
+
+```
+
+
+
